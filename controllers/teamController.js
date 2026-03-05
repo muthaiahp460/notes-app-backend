@@ -1,3 +1,5 @@
+const {pool}=require("../db")
+
 const getTeams=async(req,res)=>{
     try{
         if(req.user.role==="admin"){

@@ -1,3 +1,4 @@
+const {pool}=require("../db")
 const deleteUser=async(req,res)=>{
     try{
         const {id}=req.body

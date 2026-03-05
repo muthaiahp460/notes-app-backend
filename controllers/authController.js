@@ -4,7 +4,6 @@ const bcrypt=require("bcrypt")
 const jwt=require("jsonwebtoken")
 
 
-
 const register = async(req,res)=>{
     try{
         const {name,password,email,role}=req.body;

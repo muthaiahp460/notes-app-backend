@@ -1,3 +1,4 @@
+const {pool}=require("../db")
 const assignTasks=async(req,res)=>{
     try{
         const {title,description,assigned_to,due_date}=req.body;
