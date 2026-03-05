@@ -1,27 +1,23 @@
 const {pool}=require("../db")
+const {AppError}=require("../utils/AppError")
+const asyncHandler=require("../utils/asyncHandler")
 
-const getTeams=async(req,res)=>{
-    try{
-        if(req.user.role==="admin"){
-            const [teams]=await pool.query("select * from team_members");
-            return res.status(200).json({teams});
-        }
-        else{
-            const [teamId]=await pool.query("select team_id from team_members where user_id=?",[req.user.id])
-            const [teams]=await pool.query("select * from team_members where team_id=?",[teamId[0].team_id]);
-            return res.status(200).json({teams});
-        }
+const getTeams=asyncHandler(async(req,res)=>{
+    if(req.user.role==="admin"){
+        const [teams]=await pool.query("select * from team_members");
+        return res.status(200).json({teams});
     }
-    catch(err){
-        console.log(err)
-        return res.status(500).json({message:"Internal server error"})
+    else{
+        const [teamId]=await pool.query("select team_id from team_members where user_id=?",[req.user.id])
+        const [teams]=await pool.query("select * from team_members where team_id=?",[teamId[0].team_id]);
+        return res.status(200).json({teams});
     }
-}
+})
 
-const createTeam=async(req,res)=>{
+const createTeam=asyncHandler(async(req,res)=>{
     const {teamName,teamMemberIds}=req.body
     if(!teamName || !teamMemberIds)
-        return res.status(403).json({message:"teamname and teammebers should not be empty"})
+        throw new AppError("teamname and teammebers should not be empty",403)
     const connection=await pool.getConnection();
     try{
         await connection.beginTransaction();
@@ -38,7 +34,7 @@ const createTeam=async(req,res)=>{
                 unavailable.push(teamMemberIds[i]);
         }
         if(unavailable.length>0)
-                return res.status(403).json({message:`user IDs ${unavailable} unavailable`})
+            throw new AppError(`user IDs ${unavailable} unavailable`,403)
         const [team]=await connection.query("insert into team (name,created_by) values (?,?)",[teamName,req.user.name])
         const teamId=team.insertId;
         const teamDetails=teamMemberIds.map((teamMemberId)=>[teamId,teamMemberId])
@@ -48,13 +44,14 @@ const createTeam=async(req,res)=>{
         await connection.commit();
         res.status(201).json({"message":"Team created sucessfully"})
     }
-    catch{
+    catch(err){
         await connection.rollback();
-        res.status(500).json({message:"Team creation failed something went wrong"})
+        if(err instanceof AppError) throw err;
+        throw new AppError("Team creation failed something went wrong",500);
     }
     finally{
         connection.release();
     }
-}
+})
 
 module.exports={getTeams,createTeam}

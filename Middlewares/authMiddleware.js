@@ -1,27 +1,26 @@
 
 
 const jwt = require('jsonwebtoken')
+const asyncHandler=require("../utils/asyncHandler")
+const {AppError}=require("../utils/AppError")
 
-const protect=async(req,res,next)=>{
-    try{
-        const token=req.cookies.token
-        req.user=await jwt.verify(token,process.env.JWT_SECRET_KEY)
-        next()
-    }
-    catch{
-        return res.status(401).json({message:"unauthorized user"})
-    }
-}
+const protect=asyncHandler(async(req,res,next)=>{
+    const token=req.cookies.token
+    if(!token)
+        throw new AppError("Unauthorized user",401)
+    req.user=await jwt.verify(token,process.env.JWT_SECRET_KEY)
+    next()
+})
 
-const isAdmin=async(req,res,next)=>{
+const isAdmin=(req,res,next)=>{
     if(!(req.user.role==="admin"))
-        return res.status(403).json({"message":"Acess restricted Admin only"})
+        throw new AppError("Access restricted Admin only",403)
     next()
 }
 
-const isMember=async(req,res,next)=>{
+const isMember=(req,res,next)=>{
     if(!(req.user.role==="member"))
-        return res.status(403).json({"message":"Acess restricted Member only"})
+        throw new AppError("Access restricted Member only",403)
     next()
 }
 
